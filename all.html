@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECharts Line Chart</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.2.2/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+
+<body>
+    <div id="chart" style="width: 80%; height: 500px; margin: 50px auto;"></div>
+    <script>
+        let myChart = echarts.init(document.getElementById('chart'));
+
+        // 读取CSV文件
+        Papa.parse("HistoricalPoolPriceReportServlet.csv", {
+            download: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                let data = results.data;
+                let dates = [];
+                let prices = [];
+
+                // 从第四行开始处理数据（因为前三行不包含我们需要的数据）
+                for (let i = 3; i < data.length; i++) {
+                    dates.push(data[i][0]);
+                    prices.push(parseFloat(data[i][1]));
+                }
+
+                // ECharts配置
+                let option = {
+                    title: {
+                        text: 'Pool Price Data'
+                    },
+                    toolbox: {
+                        feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none'
+                        },
+                        restore: {},
+                        saveAsImage: {}
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        
+                    },
+                    legend: {
+                        data: ['Price ($)']
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: dates
+                    },
+                    yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                            formatter: '{value} $'
+                        },
+                        name: 'Price',
+                        boundaryGap: [0, '20%']
+                    },
+                    dataZoom: [
+                        {
+                        type: 'inside',
+                        start: 99,
+                        end: 100
+                        },
+                        {
+                        start: 0,
+                        end: 10
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Price ($)',
+                            type: 'line',
+                            data: prices
+                        },
+                    ]
+                };
+
+                myChart.setOption(option);
+            }
+        });
+    </script>
+</body>
+
+</html>

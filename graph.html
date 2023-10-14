@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECharts Line Chart</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.2.2/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+
+<body>
+    <div id="timeSelection" style="text-align: center; margin: 20px;">
+        <button onclick="updateChart('hourly')">Hourly</button>
+        <button onclick="updateChart('daily')">Daily</button>
+        <button onclick="updateChart('weekly')">Weekly</button>
+        <button onclick="updateChart('monthly')">Monthly</button>
+    </div>
+    <div id="chart" style="width: 90%; height: 500px; margin: 50px auto;"></div>
+    <script>
+        let myChart = echarts.init(document.getElementById('chart'));
+        let raw_data;
+
+        // 读取CSV文件
+        Papa.parse("HistoricalPoolPriceReportServlet.csv", {
+            download: true,
+            skipEmptyLines: true,
+            complete: function (results) {
+                raw_data = results.data.slice(3); // Skip headers
+                updateChart('hourly');  // Default view
+            }
+        });
+
+        function updateChart(mode) {
+            let dates = [];
+            let seriesData = [];
+
+            switch (mode) {
+                case 'hourly':
+                    for (let i = raw_data.length - 1; i >= raw_data.length - 24 && i >= 0; i--) {
+                        let dateTime = raw_data[i][0].replace(/"/g, "");
+                        dates.unshift(dateTime);
+                        seriesData.unshift(parseFloat(raw_data[i][1]));
+                    }
+                    break;
+                case 'daily':
+                    // To be implemented: For simplicity, consider only the last 30 entries.
+                    for (let i = raw_data.length - 1; i >= raw_data.length - 24*30 && i >= 0; i -= 24) {
+                        let dayData = raw_data.slice(i-23, i+1);
+                        let open = parseFloat(dayData[0][1]);
+                        let close = parseFloat(dayData[23][1]);
+                        let high = Math.max(...dayData.map(entry => parseFloat(entry[1])));
+                        let low = Math.min(...dayData.map(entry => parseFloat(entry[1])));
+                        seriesData.unshift([open, close, low, high]);
+                        dates.unshift(dayData[0][0].replace(/"/g, "").split(" ")[0]); // Only the date part
+                    }
+                    break;
+                case 'weekly':
+                    // To be implemented
+                    break;
+                case 'monthly':
+                    // To be implemented
+                    break;
+            }
+
+            let option = {
+                title: {
+                    text: 'Pool Price Graph'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                xAxis: {
+                    type: 'category',
+                    data: dates,
+                },
+                yAxis: {
+                    type: 'value',
+                    axisLabel: {
+                    formatter: '{value} $'
+                    },
+                    name: 'Price'
+                },
+                series: [
+                    {
+                        name: 'Price ($)',
+                        type: (mode === 'hourly') ? 'line' : 'candlestick', 
+                        data: seriesData
+                    }
+                ]
+            };
+
+            myChart.setOption(option);
+        }
+    </script>
+</body>
+
+</html>
